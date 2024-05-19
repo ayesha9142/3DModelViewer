@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>3D Model Viewer</title>
     <style>
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
         }
+
         canvas {
             width: 100%;
             height: 100%;
@@ -19,7 +22,9 @@
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
 </head>
+
 <body>
     <canvas id="renderCanvas"></canvas>
     <script>
@@ -29,12 +34,20 @@
 
         const createScene = () => {
             scene = new BABYLON.Scene(engine);
-            const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 3, 5, new BABYLON.Vector3(0, 0, 0), scene);
+            const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 6, new BABYLON.Vector3(1, 1, 1), scene);
             camera.attachControl(canvas, true);
+
+            // Set camera limits
+
+            camera.lowerBetaLimit = 0.04; // Minimum angle
+            camera.upperBetaLimit = Math.PI / 2; // Maximum angle
+            camera.lowerRadiusLimit = 0; // Minimum zoom
+            camera.upperRadiusLimit = 5; // Maximum zoom
+
             const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
 
             // Load the model
-            BABYLON.SceneLoader.Append("model/", "scene.gltf", scene, () => {
+            BABYLON.SceneLoader.Append("news/", "scene.gltf", scene, () => {
                 // Model loaded
                 addHotspots(scene);
             });
@@ -45,24 +58,58 @@
         const addHotspots = (scene) => {
             const hotspots = [
                 {
-                    position: new BABYLON.Vector3(0.067503168404323, 0.3587141272132893, 1.445035833685749),
-                    name: "Table",
-                    description: "This is a description about the table."
+                    position: new BABYLON.Vector3(0.34201399866747817, 0.6749948571414213, 0.6403644416782663),
+                    name: "Anchor",
+                    description: "About Anchors.",
+                    imageUrl: "images/anchorPng.webp"
                 },
                 {
-                    position: new BABYLON.Vector3(-1.4041555593545143, 0.5300845426306227, 1.1195473682037473),
-                    name: "Sofa",
-                    description: "This is a description about the Sofa."
+                    position: new BABYLON.Vector3(2.8953806705591094, 0.03309833904851556, -3.524757185839503),
+                    name: "Pin1",
+                    description: "Pin Place 1.",
+                    imageUrl: "images/location.png"
                 },
                 {
-                    position: new BABYLON.Vector3(0.05560171784179113, 0.4468120450434878, -2.102478351746492),
-                    name: "Oven",
-                    description: "The Oven"
+                    position: new BABYLON.Vector3(-3.1100778840515897, 0.033098095750376366, -2.0314037630498887),
+                    name: "Pin2",
+                    description: "Pin Place 2",
+                    imageUrl: "images/location.png"
                 },
                 {
-                    position: new BABYLON.Vector3(1.174527586971457, 0.7197620093439825, -0.97559440864767),
-                    name: "Dining Table",
-                    description: "The Dining area"
+                    position: new BABYLON.Vector3(4.280196886241561, 1.8737314278329338, -4.367287166169788),
+                    name: "News1",
+                    description: "News 1",
+                    imageUrl: "images/whitePin.png"
+                },
+                {
+                    position: new BABYLON.Vector3(-3.118104263952617, 1.9158559140710505, -4.6773845024277225),
+                    name: "News1",
+                    description: "News 2",
+                    imageUrl: "images/whitePin.png"
+                },
+                {
+                    position: new BABYLON.Vector3(5.83582994838639, 1.1744597207412382, -2.1605472800897623),
+                    name: "Screen1",
+                    description: "Screen 2",
+                    imageUrl: "images/whitePin.png"
+                },
+                {
+                    position: new BABYLON.Vector3(-5.830092642422417, 1.5486601343971076, -2.3214210385501963),
+                    name: "miniScreen1",
+                    description: "Mini Screen 1",
+                    imageUrl: "images/whitePin.png"
+                },
+                {
+                    position: new BABYLON.Vector3(-5.830092642422412, 1.464289292371488, -0.35597844516555344),
+                    name: "miniScreen2",
+                    description: "Mini Screen 2",
+                    imageUrl: "images/whitePin.png"
+                },
+                {
+                    position: new BABYLON.Vector3(-5.8300926424224135, 1.506974658303762, 1.5357887175789793),
+                    name: "miniScreen3",
+                    description: "Mini Screen 3",
+                    imageUrl: "images/whitePin.png"
                 },
             ];
 
@@ -72,16 +119,21 @@
         };
 
         const createHotspot = (scene, hotspot) => {
-            const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 0.1 }, scene);
-            sphere.position = hotspot.position;
-            sphere.metadata = { name: hotspot.name, description: hotspot.description };
+            const plane = BABYLON.MeshBuilder.CreatePlane("plane", { size: 0.3 }, scene);
+            plane.position = hotspot.position;
+            plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
-            sphere.actionManager = new BABYLON.ActionManager(scene);
-            sphere.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
+            const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+            const button = BABYLON.GUI.Button.CreateImageOnlyButton("but", hotspot.imageUrl);
+            advancedTexture.addControl(button);
+            plane.renderingGroupId = 1;
+
+            plane.actionManager = new BABYLON.ActionManager(scene);
+            plane.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
                 BABYLON.ActionManager.OnPickTrigger,
                 () => {
-                    console.log('Hotspot Name:', hotspot.name);
-                    alert(`Hotspot clicked: ${hotspot.name}\nDescription: ${hotspot.description}`);
+                    // console.log('Hotspot Name:', hotspot.name);
+                    // alert(`Hotspot clicked: ${hotspot.name}\nDescription: ${hotspot.description}`);
                     window.parent.postMessage({ hotspotName: hotspot.name }, '*');
                 }
             ));
@@ -97,4 +149,5 @@
         });
     </script>
 </body>
+
 </html>
