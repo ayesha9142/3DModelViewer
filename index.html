@@ -121,13 +121,13 @@
                 const intersectedObject = intersects[0].object;
                 const intersectPoint = intersects[0].point;
 
-                console.log(`3D Position touched: (${intersectPoint.x}, ${intersectPoint.y}, ${intersectPoint.z})`);
-                console.log(`Intersected Object: ${intersectedObject.name}`);
+                // console.log(`3D Position touched: (${intersectPoint.x}, ${intersectPoint.y}, ${intersectPoint.z})`);
+                // console.log(`Intersected Object: ${intersectedObject.name}`);
 
                 if (intersectedObject.userData.hotspot) {
                     const hotspot = intersectedObject.userData.hotspot;
                     console.log(`Hotspot touched: ${hotspot.name}`);
-                    alert(`Hotspot touched: ${hotspot.name}\nDescription: ${hotspot.description}`);
+                    // alert(`Hotspot touched: ${hotspot.name}\nDescription: ${hotspot.description}`);
                     window.parent.postMessage({ hotspotName: hotspot.name }, '*');
                 }
             }
