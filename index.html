@@ -101,6 +101,7 @@
                 if (intersectedObject.userData.hotspot) {
                     const hotspot = intersectedObject.userData.hotspot;
                     // alert(`Hotspot clicked: ${hotspot.name}\nDescription: ${hotspot.description}`);
+                    console.log(`Hotspot clicked: ${hotspot.name}`);
                     window.parent.postMessage({ hotspotName: hotspot.name }, '*');
                 }
             }
