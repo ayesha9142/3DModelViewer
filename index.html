@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>3D Model Viewer</title>
+    <title>3D Model Viewer with Hotspots</title>
     <style>
         html,
         body {
@@ -19,134 +19,133 @@
             height: 100%;
             display: block;
         }
+
+        .hotspot-cursor {
+            cursor: pointer;
+        }
     </style>
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
 </head>
 
 <body>
-    <canvas id="renderCanvas"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+    <script src="hotspots.js"></script>
     <script>
-        const canvas = document.getElementById('renderCanvas');
-        const engine = new BABYLON.Engine(canvas, true);
-        let scene;
+        let scene, camera, renderer, raycaster, mouse;
 
-        const createScene = () => {
-            scene = new BABYLON.Scene(engine);
-            const camera = new BABYLON.ArcRotateCamera("camera", Math.PI / 2, Math.PI / 2, 6, new BABYLON.Vector3(1, 1, 1), scene);
-            camera.attachControl(canvas, true);
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 4);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
 
             // Set camera limits
+            controls.minDistance = 2;
+            controls.maxDistance = 7;
+            controls.minPolarAngle = Math.PI / 4; // 45 degrees
+            controls.maxPolarAngle = Math.PI / 2.5; // 90 degrees
+            controls.minAzimuthAngle = -Infinity; // No limit
+            controls.maxAzimuthAngle = Infinity; // No limit
 
-            camera.lowerBetaLimit = 0.04; // Minimum angle
-            camera.upperBetaLimit = Math.PI / 2; // Maximum angle
-            camera.lowerRadiusLimit = 0; // Minimum zoom
-            camera.upperRadiusLimit = 5; // Maximum zoom
+            // Increase scene lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambientLight);
 
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(1, 1, 0), scene);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+            directionalLight.position.set(1, 1, 0).normalize();
+            scene.add(directionalLight);
 
-            // Load the model
-            BABYLON.SceneLoader.Append("news/", "scene.gltf", scene, () => {
-                // Model loaded
-                addHotspots(scene);
+            const loader = new THREE.GLTFLoader();
+            loader.load('news/scene.gltf', function (gltf) {
+                scene.add(gltf.scene);
+                addHotspots();
             });
 
-            return scene;
-        };
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
 
-        const addHotspots = (scene) => {
-            const hotspots = [
-                {
-                    position: new BABYLON.Vector3(0.34201399866747817, 0.6749948571414213, 0.6403644416782663),
-                    name: "Anchor",
-                    description: "About Anchors.",
-                    imageUrl: "images/anchorPng.webp"
-                },
-                {
-                    position: new BABYLON.Vector3(2.8953806705591094, 0.03309833904851556, -3.524757185839503),
-                    name: "Pin1",
-                    description: "Pin Place 1.",
-                    imageUrl: "images/location.png"
-                },
-                {
-                    position: new BABYLON.Vector3(-3.1100778840515897, 0.033098095750376366, -2.0314037630498887),
-                    name: "Pin2",
-                    description: "Pin Place 2",
-                    imageUrl: "images/location.png"
-                },
-                {
-                    position: new BABYLON.Vector3(4.280196886241561, 1.8737314278329338, -4.367287166169788),
-                    name: "News1",
-                    description: "News 1",
-                    imageUrl: "images/whitePin.png"
-                },
-                {
-                    position: new BABYLON.Vector3(-3.118104263952617, 1.9158559140710505, -4.6773845024277225),
-                    name: "News1",
-                    description: "News 2",
-                    imageUrl: "images/whitePin.png"
-                },
-                {
-                    position: new BABYLON.Vector3(5.83582994838639, 1.1744597207412382, -2.1605472800897623),
-                    name: "Screen1",
-                    description: "Screen 2",
-                    imageUrl: "images/whitePin.png"
-                },
-                {
-                    position: new BABYLON.Vector3(-5.830092642422417, 1.5486601343971076, -2.3214210385501963),
-                    name: "miniScreen1",
-                    description: "Mini Screen 1",
-                    imageUrl: "images/whitePin.png"
-                },
-                {
-                    position: new BABYLON.Vector3(-5.830092642422412, 1.464289292371488, -0.35597844516555344),
-                    name: "miniScreen2",
-                    description: "Mini Screen 2",
-                    imageUrl: "images/whitePin.png"
-                },
-                {
-                    position: new BABYLON.Vector3(-5.8300926424224135, 1.506974658303762, 1.5357887175789793),
-                    name: "miniScreen3",
-                    description: "Mini Screen 3",
-                    imageUrl: "images/whitePin.png"
-                },
-            ];
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('click', onMouseClick, false);
+            window.addEventListener('mousemove', onMouseMove, false);
 
-            hotspots.forEach(hotspot => {
-                createHotspot(scene, hotspot);
-            });
-        };
+            animate();
+        }
 
-        const createHotspot = (scene, hotspot) => {
-            const plane = BABYLON.MeshBuilder.CreatePlane("plane", { size: 0.3 }, scene);
-            plane.position = hotspot.position;
-            plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-            const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
-            const button = BABYLON.GUI.Button.CreateImageOnlyButton("but", hotspot.imageUrl);
-            advancedTexture.addControl(button);
-            plane.renderingGroupId = 1;
+        function onMouseClick(event) {
+            event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-            plane.actionManager = new BABYLON.ActionManager(scene);
-            plane.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
-                BABYLON.ActionManager.OnPickTrigger,
-                () => {
-                    // console.log('Hotspot Name:', hotspot.name);
-                    // alert(`Hotspot clicked: ${hotspot.name}\nDescription: ${hotspot.description}`);
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            if (intersects.length > 0) {
+                const intersectedObject = intersects[0].object;
+                const intersectPoint = intersects[0].point;
+
+                console.log(`3D Position clicked: (${intersectPoint.x}, ${intersectPoint.y}, ${intersectPoint.z})`);
+
+                if (intersectedObject.userData.hotspot) {
+                    const hotspot = intersectedObject.userData.hotspot;
+                    alert(`Hotspot clicked: ${hotspot.name}\nDescription: ${hotspot.description}`);
                     window.parent.postMessage({ hotspotName: hotspot.name }, '*');
                 }
-            ));
-        };
+            }
+        }
 
-        createScene();
-        engine.runRenderLoop(() => {
-            scene.render();
-        });
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-        window.addEventListener('resize', () => {
-            engine.resize();
-        });
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            document.body.style.cursor = intersects.length > 0 && intersects[0].object.userData.hotspot ? 'pointer' : 'auto';
+        }
+
+        function addHotspots() {
+            hotspots.forEach(hotspot => {
+                const planeGeometry = new THREE.PlaneGeometry(0.5, 0.5);
+                const planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true });
+                const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+
+                plane.position.copy(hotspot.position);
+                plane.userData.hotspot = hotspot;
+                plane.renderOrder = 1;
+                scene.add(plane);
+
+                const spriteMap = new THREE.TextureLoader().load(hotspot.imageUrl);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: spriteMap });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.position.copy(hotspot.position);
+                sprite.scale.set(0.3, 0.3, 0.3);
+                sprite.userData.hotspot = hotspot;
+                sprite.onBeforeRender = function(renderer) {
+                    renderer.clearDepth(); // Clear the depth buffer before rendering the sprite
+                };
+                scene.add(sprite);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        init();
     </script>
 </body>
 
